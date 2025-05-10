@@ -1,0 +1,59 @@
+import cv2
+import numpy as np
+
+# Define color ranges for detection (in HSV color space)
+red_lower1 = np.array([0, 100, 100])
+red_upper1 = np.array([10, 255, 255])
+red_lower2 = np.array([160, 100, 100])
+red_upper2 = np.array([179, 255, 255])
+
+yellow_lower = np.array([20, 100, 100])
+yellow_upper = np.array([30, 255, 255])
+
+green_lower = np.array([40, 50, 50])
+green_upper = np.array([90, 255, 255])
+
+# Start webcam
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Resize for faster processing
+    frame = cv2.resize(frame, (640, 480))
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    # Create masks for each color
+    red_mask1 = cv2.inRange(hsv, red_lower1, red_upper1)
+    red_mask2 = cv2.inRange(hsv, red_lower2, red_upper2)
+    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
+
+    yellow_mask = cv2.inRange(hsv, yellow_lower, yellow_upper)
+    green_mask = cv2.inRange(hsv, green_lower, green_upper)
+
+    # Detect color by checking if significant number of pixels match
+    red_pixels = cv2.countNonZero(red_mask)
+    yellow_pixels = cv2.countNonZero(yellow_mask)
+    green_pixels = cv2.countNonZero(green_mask)
+
+    status = "No Traffic Light Detected"
+
+    if red_pixels > 500:
+        status = "RED - STOP"
+    elif yellow_pixels > 500:
+        status = "YELLOW - SLOW"
+    elif green_pixels > 500:
+        status = "GREEN - GO"
+
+    # Show status on frame
+    cv2.putText(frame, status, (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 3)
+    cv2.imshow("Traffic Light Detection", frame)
+
+    # Exit on pressing 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
